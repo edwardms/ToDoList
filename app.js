@@ -7,7 +7,7 @@ require('dotenv').config()
 //const date = require(__dirname + '/date.js');
 
 //const { port, mongoAtlasUsername, mongoAtlasPassword, mongoAtlasCluster, dbName} = require(__dirname + '/properties.js');
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 const mongoAtlasUsername = process.env.MONGO_USERNAME;
 const mongoAtlasPassword = process.env.MONGO_PASSWORD;
 const mongoAtlasCluster = process.env.MONGO_CLUSTER;
@@ -22,10 +22,6 @@ const mongoAtlasUrl = `mongodb+srv://${mongoAtlasUsername}:${mongoAtlasPassword}
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static(__dirname + '/public'));
-
-mongoose.connect(mongoAtlasUrl)
-        .then(() => console.log('MongoDB connected'))
-        .catch((err) => console.log(err));
 
 const itemsSchema = mongoose.Schema({
     name: {
@@ -158,6 +154,11 @@ app.get("/:customListName", (req, res) => {
 //     res.render('about');
 // });
 
-app.listen(port, () => {
-    console.log(`Server started on port ${port}`);
-});
+mongoose.connect(mongoAtlasUrl)
+        .then(() => {
+            console.log('MongoDB connected');
+            app.listen(port, () => {
+                console.log(`Server started on port ${port}`);
+            });
+        })
+        .catch((err) => console.log(err));
