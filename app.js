@@ -3,10 +3,18 @@ const bodyParser = require('body-parser');
 const ejs = require('ejs');
 const mongoose = require("mongoose");
 const lodash = require("lodash");
+require('dotenv').config()
 //const date = require(__dirname + '/date.js');
 
+//const { port, mongoAtlasUsername, mongoAtlasPassword, mongoAtlasCluster, dbName} = require(__dirname + '/properties.js');
+const port = process.env.PORT || 3000;
+const mongoAtlasUsername = process.env.MONGO_USERNAME;
+const mongoAtlasPassword = process.env.MONGO_PASSWORD;
+const mongoAtlasCluster = process.env.MONGO_CLUSTER;
+const mongoDbName = process.env.MONGO_DB_NAME;
+
 const app = express();
-const port = 3000;
+const mongoAtlasUrl = `mongodb+srv://${mongoAtlasUsername}:${mongoAtlasPassword}@${mongoAtlasCluster}.mongodb.net/${mongoDbName}`;
 
 // const items = [];
 // const workItems = [];
@@ -15,7 +23,7 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static(__dirname + '/public'));
 
-mongoose.connect("mongodb://127.0.0.1:27017/todolistDB")
+mongoose.connect(mongoAtlasUrl)
         .then(() => console.log('MongoDB connected'))
         .catch((err) => console.log(err));
 
@@ -60,7 +68,7 @@ app.get('/', (req, res) => {
                 Item.insertMany(defaultItems);
 
                 res.redirect("/");
-            } else {    
+            } else {
                 res.render('index', {listTitle: /*date.getDay()*/"Today", listItems: itemsFromDb});
             }
         }
@@ -71,7 +79,7 @@ app.post('/', (req, res) => {
     const item = new Item({
         name: req.body.newItem
     });
-    const listName = req.body.addButton;
+    const listName = lodash.lowerCase(req.body.addButton);
 
     if (listName === "today") {
         item.save()
@@ -83,8 +91,9 @@ app.post('/', (req, res) => {
         List.findOne({name: listName})
             .then(listFromDB => {
                     listFromDB.items.push(item);
+                    
                     listFromDB.save()
-                              .then( (item) => console.log(`Item ${item.name} added to list ${listFromDB}`) )
+                              .then( (item) => console.log(`Item ${item.name} added to list ${listFromDB.name}`) )
                               .catch( (err) => console.log(err) );
 
                     res.redirect(`/${listName}`);
@@ -103,7 +112,7 @@ app.post('/', (req, res) => {
 
 app.post("/delete", (req, res) => {
     const deletedItemId = req.body.deleteCheckbox;
-    const listName = req.body.listName;
+    const listName = lodash.lowerCase(req.body.listName);
 
     if (listName === "today") {
         Item.findByIdAndDelete(deletedItemId)
@@ -120,7 +129,7 @@ app.post("/delete", (req, res) => {
 });
 
 app.get("/:customListName", (req, res) => {
-    const customListName = req.params.customListName.toLowerCase();
+    const customListName = req.params.customListName.toLowerCase() !== "favicon.ico" ? req.params.customListName.toLowerCase() : '';
 
     List.findOne({name: customListName})
         .then(listFromDB => {
